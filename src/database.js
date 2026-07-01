@@ -2,13 +2,7 @@ import { Pool } from "pg";
 
 import { config } from "./config.js";
 
-export const config = {
-  dbHost: process.env.DB_HOST,
-  dbUser: process.env.DB_USER,
-  dbPassword: process.env.DB_PASSWORD,
-  dbName: process.env.DB_NAME,
-  dbPort: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 6543,
-};
+
 
 
 export const pool = new Pool({
