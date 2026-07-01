@@ -1,18 +1,15 @@
 //database
 import { Pool } from "pg";
-import { config } from "./config.js";
+import dotenv from 'dotenv';
+dotenv.config(); // Esto solo sirve para tu entorno local
 
-export const pool = new Pool({
-  host: config.dbHost,
-  port: config.dbPort,
-  database: config.dbName,
-  user: config.dbUser,
-  password: config.dbPassword,
-  ssl: {
-    rejectUnauthorized: false,
-  },
-});
-
+export const config = {
+  dbHost: process.env.DB_HOST,
+  dbUser: process.env.DB_USER,
+  dbPassword: process.env.DB_PASSWORD,
+  dbName: process.env.DB_NAME,
+  dbPort: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 6543,
+};
 export const initializeDatabase = async () => {
   await pool.query(`
     create table if not exists users (
@@ -24,9 +21,7 @@ export const initializeDatabase = async () => {
       updated_at timestamptz not null default now()
     );
 
-    drop table if exists materia_profesores;
-    drop table if exists materia_alumnos;
-    drop table if exists materias;
+    
 
     create table materias (
       id uuid primary key default gen_random_uuid(),
