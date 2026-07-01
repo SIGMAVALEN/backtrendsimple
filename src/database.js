@@ -1,6 +1,6 @@
 import { Pool } from "pg";
 
-dotenv.config(); // Esto solo sirve para tu entorno local
+import { config } from "./config.js";
 
 export const config = {
   dbHost: process.env.DB_HOST,
