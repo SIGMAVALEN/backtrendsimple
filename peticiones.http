@@ -1,0 +1,121 @@
+@url= http://localhost:3000
+
+# Health
+GET {{url}}/health/db
+###
+
+# List all users
+GET {{url}}/users
+###
+
+# Create student user
+POST {{url}}/users
+Content-Type: application/json
+
+{
+  "name": "Valentino",
+  "email": "valentino@mail.com",
+  "type": "alumno"
+}
+###
+
+# Create professor user
+POST {{url}}/users
+Content-Type: application/json
+
+{
+  "name": "Prof. Martín",
+  "email": "prof.martin@mail.com",
+  "type": "profesor"
+}
+###
+
+# Update user by ID
+PUT {{url}}/users/0e3c3120-199f-4583-8790-d4768ebe089f
+Content-Type: application/json
+
+{
+  "name": "Valentino Updated",
+  "email": "valentino_updated@mail.com",
+  "type": "alumno"
+}
+###
+
+# Delete user by ID
+DELETE {{url}}/users/0e3c3120-199f-4583-8790-d4768ebe089f
+###
+
+# List materias
+GET {{url}}/materias
+###
+
+# Create materia
+POST {{url}}/materias
+Content-Type: application/json
+
+{
+  "name": "Matemáticas",
+  "code": "MAT-101",
+  "description": "Matemáticas básicas"
+}
+###
+
+# Get materia by ID
+GET {{url}}/materias/{{materiaId}}
+###
+
+# Update materia by ID
+PUT {{url}}/materias/{{materiaId}}
+Content-Type: application/json
+
+{
+  "name": "Matemáticas Avanzadas",
+  "code": "MAT-201",
+  "description": "Matemáticas avanzadas"
+}
+###
+
+# Delete materia by ID
+DELETE {{url}}/materias/{{materiaId}}
+###
+
+# Add professor to materia
+POST {{url}}/materias/{{materiaId}}/profesores
+Content-Type: application/json
+
+{
+  "userId": "{{profesorId}}"
+}
+###
+
+# List professors for materia
+GET {{url}}/materias/{{materiaId}}/profesores
+###
+
+# Remove professor from materia
+DELETE {{url}}/materias/{{materiaId}}/profesores/{{profesorId}}
+###
+
+# Add student to materia
+POST {{url}}/materias/763ca6a9-0280-4192-a70e-77d55169ac9d/alumnos
+Content-Type: application/json
+
+{
+  "userId": "0e3c3120-199f-4583-8790-d4768ebe089f"
+}
+###
+
+# List students for materia
+GET {{url}}/materias/{{materiaId}}/alumnos
+###
+
+# Remove student from materia
+DELETE {{url}}/materias/{{materiaId}}/alumnos/{{alumnoId}}
+###
+
+
+
+
+
+
+
