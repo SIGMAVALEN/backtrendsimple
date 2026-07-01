@@ -1,4 +1,3 @@
-//database
 import { Pool } from "pg";
 import dotenv from 'dotenv';
 dotenv.config(); // Esto solo sirve para tu entorno local
@@ -10,6 +9,19 @@ export const config = {
   dbName: process.env.DB_NAME,
   dbPort: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 6543,
 };
+
+
+export const pool = new Pool({
+  host: config.dbHost,
+  user: config.dbUser,
+  password: config.dbPassword,
+  database: config.dbName,
+  port: config.dbPort,
+  ssl: {
+    rejectUnauthorized: false, 
+  },
+});
+
 export const initializeDatabase = async () => {
   await pool.query(`
     create table if not exists users (
@@ -21,9 +33,7 @@ export const initializeDatabase = async () => {
       updated_at timestamptz not null default now()
     );
 
-    
-
-    create table materias (
+    create table if not exists materias (
       id uuid primary key default gen_random_uuid(),
       name text not null,
       code text unique,
@@ -32,14 +42,14 @@ export const initializeDatabase = async () => {
       updated_at timestamptz not null default now()
     );
 
-    create table materia_profesores (
+    create table if not exists materia_profesores (
       materia_id uuid not null references materias (id) on delete cascade,
       user_id uuid not null references users (id) on delete cascade,
       created_at timestamptz not null default now(),
       primary key (materia_id, user_id)
     );
 
-    create table materia_alumnos (
+    create table if not exists materia_alumnos (
       materia_id uuid not null references materias (id) on delete cascade,
       user_id uuid not null references users (id) on delete cascade,
       created_at timestamptz not null default now(),
@@ -47,6 +57,7 @@ export const initializeDatabase = async () => {
     );
   `);
 };
+
 
 initializeDatabase().catch((error) => {
   console.error("Database initialization failed:", error.message);
