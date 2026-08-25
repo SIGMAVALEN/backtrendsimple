@@ -22,6 +22,21 @@ class MateriasService {
     return result.rows[0];
   }
 
+  /**
+   * Busca una materia por su "code" (ej: "MAT101") en vez del UUID,
+   * para no tener que andar copiando el id largo.
+   */
+  async getMateriaByCode(code) {
+    const result = await pool.query(
+      `SELECT id, name, code, description, created_at, updated_at
+       FROM materias
+       WHERE code = $1`,
+      [code]
+    );
+
+    return result.rows[0];
+  }
+
   async createMateria(materia) {
     const { name, code, description } = materia;
 

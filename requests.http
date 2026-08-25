@@ -1,0 +1,396 @@
+### =====================================================================
+### REQUESTS.HTTP — Backend Materias / Alumnos / Profesores
+### =====================================================================
+### CÓMO USAR ESTE ARCHIVO:
+###
+### Opción A (VS Code): instalar la extensión "REST Client" (humao.rest-client).
+###   Con el archivo abierto va a aparecer un link "Send Request" arriba de
+###   cada bloque que empieza con ###. Click y se ejecuta.
+###
+### Opción B (IntelliJ / WebStorm / PyCharm): soporte nativo para .http,
+###   no hace falta instalar nada.
+###
+### LOS TOKENS SE GENERAN SOLOS: los bloques de la sección 1 llaman a
+### POST /auth/register, y las variables @profesorToken, @alumnoToken, etc.
+### se completan automáticamente leyendo el "token" de esa respuesta
+### (sintaxis {{nombreDelRequest.response.body.$.token}} de REST Client).
+### No hay que copiar ni pegar nada a mano — corré los requests EN ORDEN,
+### de arriba hacia abajo, y cada variable se va llenando sola.
+###
+### Antes de arrancar:
+###   1. Levantar el server:  npm install && npm start
+###   2. Tu .env tiene que tener JWT_SECRET seteado (cualquier valor sirve,
+###      solo tiene que ser el mismo que usa el server que estás pegándole).
+### =====================================================================
+
+@baseUrl = http://localhost:3000
+
+
+### =====================================================================
+### 0. HEALTH CHECK
+### =====================================================================
+
+### 0.1 Server vivo
+GET {{baseUrl}}/health
+
+### 0.2 Conexión a la base de datos
+GET {{baseUrl}}/health/db
+
+
+### =====================================================================
+### 1. AUTH — acá se generan los tokens de verdad, vía la API
+### =====================================================================
+
+### 1.1 Registrar un PROFESOR -> 201, devuelve { user, token }
+# @name registerProfesor
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Prof. Ana García",
+  "email": "ana.garcia@demo.com",
+  "type": "profesor"
+}
+
+### 1.2 Registrar un ALUMNO -> 201
+# @name registerAlumno
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "under prime",
+  "email": "juanunder@demo.com",
+  "type": "alumno"
+}
+
+### 1.3 Registrar un segundo ALUMNO (para el test de "no puedo anotar a otro")
+# @name registerAlumno2
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Lucía Fernández",
+  "email": "lucia.fernandez@demo.com",
+  "type": "alumno"
+}
+
+### Variables capturadas automáticamente de los 3 registros de arriba:
+@profesorToken = {{registerProfesor.response.body.$.token}}
+@profesorId = {{registerProfesor.response.body.$.user.id}}
+@alumnoToken = {{registerAlumno.response.body.$.token}}
+@alumnoId = {{registerAlumno.response.body.$.user.id}}
+@alumno2Token = {{registerAlumno2.response.body.$.token}}
+@alumno2Id = {{registerAlumno2.response.body.$.user.id}}
+
+### 1.4 Registrar con un email ya usado -> 409
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Duplicado",
+  "email": "ana.garcia@demo.com",
+  "type": "profesor"
+}
+
+### 1.5 Registrar con type inválido -> 400
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Tipo Trucho",
+  "email": "trucho@demo.com",
+  "type": "administrador"
+}
+
+### 1.6 Login con un email existente -> 200, devuelve un token nuevo
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "juan.perez@demo.com"
+}
+
+### 1.7 Login con email inexistente -> 404
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "no.existe@demo.com"
+}
+
+
+### =====================================================================
+### 2. SEGURIDAD DE TOKEN
+### =====================================================================
+### Los tokens "malos" de acá abajo NO se pueden conseguir por la API a
+### propósito (por eso están generados aparte con generate-test-tokens.js,
+### firmados con el JWT_SECRET "super_secret_dev_key_2026"). Si tu .env usa
+### otra clave, regenerá estos dos con:
+###   JWT_SECRET=tu_clave node generate-test-tokens.js
+
+@expiredToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjIyMjIyMjIyLTIyMjItNDIyMi04MjIyLTIyMjIyMjIyMjIyMiIsIm5hbWUiOiJKdWFuIFDDqXJleiIsImVtYWlsIjoianVhbi5wZXJlekBkZW1vLmNvbSIsInR5cGUiOiJhbHVtbm8iLCJpYXQiOjE3ODc2MjU3NjIsImV4cCI6MTc4NzYyNTc1Mn0.aZDWtX-6KGK7U__DXAO6jdD5f64yNTsrcTv7LF4vFN4
+@fakeSignedToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjIyMjIyMjIyLTIyMjItNDIyMi04MjIyLTIyMjIyMjIyMjIyMiIsIm5hbWUiOiJGYWxzbyBQcm9mZXNvciIsImVtYWlsIjoiaGFja2VyQGRlbW8uY29tIiwidHlwZSI6InByb2Zlc29yIiwiaWF0IjoxNzg3NjI1NzYyLCJleHAiOjE4MTkxNjE3NjJ9.s814vUoxjVaFjZn3nUHMa6kEm_h5lXRfd6rd0rKNAHQ
+
+### 2.1 Sin header Authorization -> 401
+GET {{baseUrl}}/materias
+
+### 2.2 Header sin "Bearer " -> 401
+GET {{baseUrl}}/materias
+Authorization: {{profesorToken}}
+
+### 2.3 Token con formato roto (no es un JWT) -> 403
+GET {{baseUrl}}/materias
+Authorization: Bearer esto.no-es.unjwt
+
+### 2.4 Token vencido -> 403 "Token inválido o expirado"
+GET {{baseUrl}}/materias
+Authorization: Bearer {{expiredToken}}
+
+### 2.5 Token con firma falsificada -> 403
+GET {{baseUrl}}/materias
+Authorization: Bearer {{fakeSignedToken}}
+
+### 2.6 Token real de alumno -> 200 (puede leer)
+GET {{baseUrl}}/materias
+Authorization: Bearer {{alumnoToken}}
+
+### 2.7 Token real de profesor -> 200 (puede leer)
+GET {{baseUrl}}/materias
+Authorization: Bearer {{profesorToken}}
+
+
+### =====================================================================
+### 3. USERS — CRUD (además de /auth, sigue existiendo para uso administrativo)
+### =====================================================================
+
+### 3.1 Un PROFESOR da de alta un usuario a mano -> 201
+POST {{baseUrl}}/users
+Content-Type: application/json
+Authorization: Bearer {{profesorToken}}
+
+{
+  "name": "Alumno Cargado a Mano",
+  "email": "cargado.mano@demo.com",
+  "type": "alumno"
+}
+
+### 3.2 Un ALUMNO intenta dar de alta un usuario -> 403 (solo profesores)
+POST {{baseUrl}}/users
+Content-Type: application/json
+Authorization: Bearer {{alumnoToken}}
+
+{
+  "name": "Intento Trucho",
+  "email": "intento.trucho@demo.com",
+  "type": "alumno"
+}
+
+### 3.3 Listar todos los usuarios
+GET {{baseUrl}}/users
+
+### 3.4 Obtener usuario por ID
+GET {{baseUrl}}/users/{{profesorId}}
+
+### 3.5 Obtener usuario por EMAIL (alternativa al UUID)
+GET {{baseUrl}}/users/email/juan.perez@demo.com
+
+### 3.6 Obtener usuario inexistente -> 404
+GET {{baseUrl}}/users/00000000-0000-4000-8000-000000000000
+
+### 3.7 Actualizar usuario
+PUT {{baseUrl}}/users/{{alumnoId}}
+Content-Type: application/json
+Authorization: Bearer {{alumnoToken}}
+
+{
+  "name": "Juan Pérez (actualizado)"
+}
+
+
+### =====================================================================
+### 4. MATERIAS — CRUD
+### =====================================================================
+
+### 4.1 Crear materia como PROFESOR -> 201
+# @name crearMateria
+POST {{baseUrl}}/materias
+Content-Type: application/json
+Authorization: Bearer {{profesorToken}}
+
+{
+  "name": "Bases de Datos",
+  "code": "BD101",
+  "description": "Introducción a bases de datos relacionales"
+}
+
+@materiaId = {{crearMateria.response.body.$.id}}
+
+### 4.2 Crear materia como ALUMNO -> 403 (solo lectura para alumnos)
+POST {{baseUrl}}/materias
+Content-Type: application/json
+Authorization: Bearer {{alumnoToken}}
+
+{
+  "name": "Materia Trucha",
+  "code": "TRUCHA1",
+  "description": "no debería poder crear esto"
+}
+
+### 4.3 Crear materia SIN token -> 401
+POST {{baseUrl}}/materias
+Content-Type: application/json
+
+{
+  "name": "Materia Sin Token",
+  "code": "SINTOKEN"
+}
+
+### 4.4 Listar materias (alumno puede leer)
+GET {{baseUrl}}/materias
+Authorization: Bearer {{alumnoToken}}
+
+### 4.5 Buscar materia por CODE (alternativa al UUID)
+GET {{baseUrl}}/materias/code/BD101
+Authorization: Bearer {{alumnoToken}}
+
+### 4.6 Obtener materia por ID
+GET {{baseUrl}}/materias/{{materiaId}}
+Authorization: Bearer {{alumnoToken}}
+
+### 4.7 Obtener materia inexistente -> 404
+GET {{baseUrl}}/materias/00000000-0000-4000-8000-000000000000
+Authorization: Bearer {{profesorToken}}
+
+### 4.8 Actualizar materia como PROFESOR -> 200
+PUT {{baseUrl}}/materias/{{materiaId}}
+Content-Type: application/json
+Authorization: Bearer {{profesorToken}}
+
+{
+  "description": "Introducción a bases de datos relacionales y NoSQL"
+}
+
+### 4.9 Actualizar materia como ALUMNO -> 403
+PUT {{baseUrl}}/materias/{{materiaId}}
+Content-Type: application/json
+Authorization: Bearer {{alumnoToken}}
+
+{
+  "description": "un alumno no debería poder editar esto"
+}
+
+
+### =====================================================================
+### 5. RELACIÓN MATERIA <-> PROFESORES
+### =====================================================================
+
+### 5.1 Profesor se auto-asigna a la materia (sin userId, usa el del token) -> 201
+POST {{baseUrl}}/materias/{{materiaId}}/profesores
+Content-Type: application/json
+Authorization: Bearer {{profesorToken}}
+
+{}
+
+### 5.2 Alumno intenta agregar un profesor -> 403
+POST {{baseUrl}}/materias/{{materiaId}}/profesores
+Content-Type: application/json
+Authorization: Bearer {{alumnoToken}}
+
+{
+  "userId": "{{profesorId}}"
+}
+
+### 5.3 Profesor intenta agregar como "profesor" a alguien que es alumno -> 400
+POST {{baseUrl}}/materias/{{materiaId}}/profesores
+Content-Type: application/json
+Authorization: Bearer {{profesorToken}}
+
+{
+  "userId": "{{alumnoId}}"
+}
+
+### 5.4 Listar profesores de la materia
+GET {{baseUrl}}/materias/{{materiaId}}/profesores
+Authorization: Bearer {{alumnoToken}}
+
+### 5.5 Quitar profesor de la materia -> 200
+DELETE {{baseUrl}}/materias/{{materiaId}}/profesores/{{profesorId}}
+Authorization: Bearer {{profesorToken}}
+
+### 5.6 (re-agregarlo para los tests que siguen)
+POST {{baseUrl}}/materias/{{materiaId}}/profesores
+Content-Type: application/json
+Authorization: Bearer {{profesorToken}}
+
+{}
+
+
+### =====================================================================
+### 6. RELACIÓN MATERIA <-> ALUMNOS (self-service)
+### =====================================================================
+
+### 6.1 Alumno se auto-anota (sin userId, usa el del token) -> 201
+POST {{baseUrl}}/materias/{{materiaId}}/alumnos
+Content-Type: application/json
+Authorization: Bearer {{alumnoToken}}
+
+{}
+
+### 6.2 Alumno intenta anotar a OTRO alumno -> 403
+POST {{baseUrl}}/materias/{{materiaId}}/alumnos
+Content-Type: application/json
+Authorization: Bearer {{alumnoToken}}
+
+{
+  "userId": "{{alumno2Id}}"
+}
+
+### 6.3 Profesor SÍ puede anotar a cualquier alumno -> 201
+POST {{baseUrl}}/materias/{{materiaId}}/alumnos
+Content-Type: application/json
+Authorization: Bearer {{profesorToken}}
+
+{
+  "userId": "{{alumno2Id}}"
+}
+
+### 6.4 Listar alumnos de la materia
+GET {{baseUrl}}/materias/{{materiaId}}/alumnos
+Authorization: Bearer {{profesorToken}}
+
+### 6.5 Alumno se da de baja a sí mismo -> 200
+DELETE {{baseUrl}}/materias/{{materiaId}}/alumnos/{{alumnoId}}
+Authorization: Bearer {{alumnoToken}}
+
+### 6.6 Alumno intenta dar de baja a OTRO alumno -> 403
+DELETE {{baseUrl}}/materias/{{materiaId}}/alumnos/{{alumno2Id}}
+Authorization: Bearer {{alumnoToken}}
+
+### 6.7 Profesor da de baja a cualquier alumno -> 200
+DELETE {{baseUrl}}/materias/{{materiaId}}/alumnos/{{alumno2Id}}
+Authorization: Bearer {{profesorToken}}
+
+
+### =====================================================================
+### 7. LIMPIEZA
+### =====================================================================
+
+### 7.1 Alumno intenta borrar la materia -> 403
+DELETE {{baseUrl}}/materias/{{materiaId}}
+Authorization: Bearer {{alumnoToken}}
+
+### 7.2 Profesor borra la materia -> 200
+DELETE {{baseUrl}}/materias/{{materiaId}}
+Authorization: Bearer {{profesorToken}}
+
+### 7.3 Borrar usuarios de prueba
+DELETE {{baseUrl}}/users/{{profesorId}}
+Authorization: Bearer {{profesorToken}}
+
+###
+DELETE {{baseUrl}}/users/{{alumnoId}}
+Authorization: Bearer {{alumnoToken}}
+
+###
+DELETE {{baseUrl}}/users/{{alumno2Id}}
+Authorization: Bearer {{alumno2Token}}

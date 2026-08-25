@@ -1,5 +1,5 @@
 
-
+import "dotenv/config"; // <-- Agrega esta línea arriba del todo
 export const config = {
   port: process.env.PORT || 3000,
 
