@@ -30,6 +30,7 @@
 ### 0. HEALTH CHECK
 ### =====================================================================
 
+
 ### 0.1 Server vivo
 GET {{baseUrl}}/health
 
@@ -47,8 +48,8 @@ POST {{baseUrl}}/auth/register
 Content-Type: application/json
 
 {
-  "name": "Prof. Ana García",
-  "email": "ana.garcia@demo.com",
+  "name": "Prof. Ana laura García",
+  "email": "ana.garcialaura@demo.com",
   "type": "profesor"
 }
 
@@ -58,8 +59,8 @@ POST {{baseUrl}}/auth/register
 Content-Type: application/json
 
 {
-  "name": "under prime",
-  "email": "juanunder@demo.com",
+  "name": "under prime2",
+  "email": "juanunde2r@demo.com",
   "type": "alumno"
 }
 

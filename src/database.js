@@ -51,8 +51,3 @@ export const initializeDatabase = async () => {
     );
   `);
 };
-
-
-initializeDatabase().catch((error) => {
-  console.error("Database initialization failed:", error.message);
-});

@@ -115,17 +115,15 @@ class MateriasController {
    */
   async addStudentToMateria(req, res) {
     try {
-      const solicitante = req.user;
-      const userId = req.body.userId ?? solicitante.id;
-
-      if (esAlumno(solicitante.type) && userId !== solicitante.id) {
-        return res.status(403).json({ error: "Un alumno solo puede anotarse a sí mismo" });
-      }
-
-      if (!esAlumno(solicitante.type) && !esProfesor(solicitante.type)) {
+      if (!esProfesor(req.user?.type) && !esAlumno(req.user?.type)) {
         return res.status(403).json({ error: "Rol no autorizado" });
       }
 
+      if (esAlumno(req.user?.type)) {
+        return res.status(403).json({ error: "Los alumnos no pueden modificar la inscripción a materias" });
+      }
+
+      const userId = req.body.userId ?? req.user.id;
       const result = await materiasService.addStudentToMateria(req.params.id, userId);
       res.status(201).json(result);
     } catch (error) {
@@ -134,19 +132,15 @@ class MateriasController {
   }
 
   /**
-   * Mismo criterio que addStudentToMateria: el alumno se puede dar de baja
-   * a sí mismo, el profesor puede dar de baja a cualquiera.
+   * La baja de alumnos en una materia es acción exclusiva de profesores.
    */
   async removeStudentFromMateria(req, res) {
     try {
-      const solicitante = req.user;
-      const targetUserId = req.params.userId;
-
-      if (esAlumno(solicitante.type) && targetUserId !== solicitante.id) {
-        return res.status(403).json({ error: "Un alumno solo puede darse de baja a sí mismo" });
+      if (esAlumno(req.user?.type)) {
+        return res.status(403).json({ error: "Los alumnos no pueden quitar alumnos de una materia" });
       }
 
-      const result = await materiasService.removeStudentFromMateria(req.params.id, targetUserId);
+      const result = await materiasService.removeStudentFromMateria(req.params.id, req.params.userId);
       res.json(result);
     } catch (error) {
       res.status(400).json({ error: error.message });

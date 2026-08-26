@@ -19,11 +19,12 @@ router.get("/:id/profesores", materiasController.getMateriaProfessors);
 router.post("/:id/profesores", soloProfesor, materiasController.addProfessorToMateria);
 router.delete("/:id/profesores/:userId", soloProfesor, materiasController.removeProfessorFromMateria);
 
-// --- Alumnos de una materia: lectura libre, alta/baja propia sin soloProfesor
-//     (la lógica de "solo puede tocar su propio userId" vive en el controller) ---
+// --- Alumnos de una materia: solo lectura para usuarios autenticados ---
 router.get("/:id/alumnos", materiasController.getMateriaStudents);
-router.post("/:id/alumnos", materiasController.addStudentToMateria);
-router.delete("/:id/alumnos/:userId", materiasController.removeStudentFromMateria);
+
+// La inscripción y baja de alumnos es administración de materia: solo profesores.
+router.post("/:id/alumnos", soloProfesor, materiasController.addStudentToMateria);
+router.delete("/:id/alumnos/:userId", soloProfesor, materiasController.removeStudentFromMateria);
 
 router.get("/:id", materiasController.getMateriaById);
 router.put("/:id", soloProfesor, materiasController.updateMateria);
